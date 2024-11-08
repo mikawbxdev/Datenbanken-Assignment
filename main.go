@@ -25,8 +25,9 @@ type song struct {
 	songName   string
 	artistName string
 	albumName  string
-	songVector [14]float64
+	songVector [12]float64
 }
+
 type Extension struct {
 	Extname    string
 	Extversion string
@@ -45,9 +46,6 @@ func main() {
 	// Playist ID vom User bekommen
 	fmt.Print("Please enter a playlist from Spotify (link or ID): ")
 	fmt.Scanln(&playlistID)
-	if playlistID == "" {
-		playlistID = "2FrqyYlVCpNzwQ6orUbG1h" // Standart Playlist ID: Wilder Mix
-	}
 	if strings.Contains(playlistID, "open.spotify.com") { // Ggf ID aus Link extrahieren
 		playlistID = strings.Split(playlistID, "/")[len(strings.Split(playlistID, "/"))-1]
 		playlistID = strings.Split(playlistID, "?")[0]
@@ -58,7 +56,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Unable to get song IDs: %v\n", err)
 		os.Exit(1)
 	}
-	songs, err = getVectorDataFromIDs(songIDs, songs)
+	songs, err = getVectorDataFromIDs(songIDs, songs) // Vektordaten von SongIDs abrufen
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to get vector data: %v\n", err)
 		os.Exit(1)
@@ -169,26 +167,20 @@ func getVectorDataFromIDs(ids string, songs []song) ([]song, error) {
 			if j == "speechiness" {
 				songs[i].songVector[6] = val.(float64)
 			}
-			if j == "acousticness" {
+			if j == "instrumentalness" {
 				songs[i].songVector[7] = val.(float64)
 			}
-			if j == "instrumentalness" {
+			if j == "liveness" {
 				songs[i].songVector[8] = val.(float64)
 			}
-			if j == "liveness" {
+			if j == "valence" {
 				songs[i].songVector[9] = val.(float64)
 			}
-			if j == "valence" {
+			if j == "tempo" {
 				songs[i].songVector[10] = val.(float64)
 			}
-			if j == "tempo" {
-				songs[i].songVector[11] = val.(float64)
-			}
 			if j == "time_signature" {
-				songs[i].songVector[12] = val.(float64)
-			}
-			if j == "valence" {
-				songs[i].songVector[13] = val.(float64)
+				songs[i].songVector[11] = val.(float64)
 			}
 		}
 	}
@@ -204,7 +196,7 @@ func insertSongsToDB(playlistID string, songs []song, db *gorm.DB) {
 	}
 }
 func createTable(playlistID string, db *gorm.DB) {
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (id VARCHAR(50) PRIMARY KEY, songName VARCHAR(50), artistName VARCHAR(50), albumName VARCHAR(50), songVector VECTOR(14));", "Playlist"+playlistID)
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (id VARCHAR(50) PRIMARY KEY, songName VARCHAR(50), artistName VARCHAR(50), albumName VARCHAR(50), songVector VECTOR(12));", "Playlist"+playlistID)
 	db.Exec(query)
 }
 
@@ -254,7 +246,7 @@ func GetResponseBody(res *http.Response) (string, error) {
 
 	return string(bodyBytes), nil
 }
-func formatVector(vector [14]float64) string {
+func formatVector(vector [12]float64) string {
 	var strValues []string
 	for _, v := range vector {
 		strValues = append(strValues, fmt.Sprintf("%v", v)) // Ohne Rundung
